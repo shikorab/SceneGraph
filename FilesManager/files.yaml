@@ -1,0 +1,39 @@
+# the file holds the paths to default files that will be loaded or saved
+logs:
+    name: "logs"
+    type: "dir"
+    doc: "default folder for logs"
+
+sg_module:
+    train:
+      tf_logs:
+        name: "module/tf_logs"
+        type: "dir"
+        doc: "holds tensor flow log"
+      saver:
+        name: "module/saver"
+        type: "dir"
+        doc: "stores module weights"
+      params:
+        name: "module/params.yaml"
+        type: "yaml"
+        doc: "train parameters"
+
+language_module:
+    word2vec:
+        object_embeddings:
+            name: "LanguageModule/object_embeddings.p"
+            type: "pickle"
+            doc: "Testing Language Model Word2vec trained"
+        predicate_embeddings:
+            name: "LanguageModule/predicate_embeddings.p"
+            type: "pickle"
+            doc: "Testing Language Model Word2vec trained"
+
+data:
+    visual_genome:
+        detections_v4:
+            name: "LabelPredictor/PredicatedFeatures/"
+            type: "dir"
+            doc:  "dir with entities files. each file inclues 1000 entities"
+

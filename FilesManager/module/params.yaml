@@ -1,0 +1,17 @@
+name: gpi_feature_atten
+gpi_type: "FeatureAttention"
+nof_iterations: 10000
+learning_rate: 0.0001
+learning_rate_steps: 100
+learning_rate_decay: 0.5
+load_model_name: "deep_graph_belief_norm_simple_delta_no_lang_rnn2_final_best_module.ckpt"
+use_saved_model: True
+rnn_steps: 2
+batch_size: 200
+predicate_pos_neg_ratio: 10
+lr_object_coeff: 4
+including_object: True
+layers: [500, 500, 500]
+reg_factor: 0.00
+gpu: 0
+

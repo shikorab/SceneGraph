@@ -99,3 +99,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+#additional
+FilesManager/module/tf_logs/
+FilesManager/module/saver/
