@@ -14,7 +14,7 @@ from Train import test, predicate_class_recall, NOF_OBJECTS, NOF_PREDICATES
 import cPickle
 import matplotlib.pyplot
 matplotlib.pyplot.switch_backend('agg')
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import time
 
 
@@ -262,7 +262,7 @@ def eval(load_module_name=None, gpi_type="Linguistic" ,k_recall=True, pred_class
     # create module
     module = Module(gpi_type=gpi_type, nof_predicates=NOF_PREDICATES, nof_objects=NOF_OBJECTS,
                     is_train=False,
-                    rnn_steps=rnn_steps, layers=layers, including_object=not pred_class)
+                    rnn_steps=rnn_steps, layers=layers, including_object=True)
 
     # get input place holders
     confidence_relation_ph, confidence_entity_ph = module.get_in_ph()
@@ -476,11 +476,13 @@ if __name__ == "__main__":
     rnn_steps = 2
     gpu = 3
     layers = [500, 500, 500]
+    #layers = [200, 200]
     gpi_type="FeatureAttention"
-    load_module_name = "deep_graph_belief_norm_simple_delta_no_lang_rnn2_lang_and_belief_sg3_best"  # "deep_graph_belief_norm_simple_delta_no_lang_rnn2_pcl_lang_best"#"deep_graph_belief_norm_simple_delta_no_lang_rnn2_pcl_final3_best"#"deep_graph_belief_norm_simple_delta_no_lang_rnn2_lang_and_belief_sg2_best"
-    load_module_name = "deep_graph_belief_norm_simple_delta_no_lang_rnn2_lang_and_belief2_best"
-    load_module_name = "deep_graph_belief_norm_simple_delta_no_lang_rnn2_single_atten_final_best"
-    load_module_name = "deep_graph_belief_norm_simple_delta_no_lang_rnn2_final_best"
+    gpi_type="Linguistic"
+    #gpi_type="NeighbourAttention"
+    load_module_name = "gpi_ling_atten_rnn2_exact_best"
+    #load_module_name = "gpi_feature_atten_2_200_best"
+    #load_module_name = "_best"
     # rnn2_bb_all_short_best, True , [1000, 200]
     pred_class = False
     k = 100

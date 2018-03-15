@@ -243,17 +243,16 @@ def train(name="test",
                             "Sat_Nov_11_20:56:19_2017/predicated_entities_4000_to_5000.p",
                             "Sat_Nov_11_20:56:19_2017/predicated_entities_5000_to_6000.p",
                             "Sat_Nov_11_20:56:19_2017/predicated_entities_6000_to_7000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_7000_to_8000.p"]
-        train_files_list = ["Sat_Nov_11_20:43:42_2017/predicated_entities_0_to_1000.p"]
-        validation_files_list = ["Sat_Nov_11_20:56:19_2017/predicated_entities_8000_to_9000.p",
+                            "Sat_Nov_11_20:56:19_2017/predicated_entities_7000_to_8000.p",
+                            "Sat_Nov_11_20:56:19_2017/predicated_entities_8000_to_9000.p",
                                  "Sat_Nov_11_20:56:19_2017/predicated_entities_9000_to_10000.p",
                                  "Sat_Nov_11_20:56:19_2017/predicated_entities_10000_to_11000.p",
                                  "Sat_Nov_11_20:56:19_2017/predicated_entities_11000_to_12000.p",
                                  "Sat_Nov_11_20:56:19_2017/predicated_entities_12000_to_13000.p"]
 
-        test_files_list = ["Sat_Nov_11_21:36:12_2017/predicated_entities_0_to_1000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_1000_to_2000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_2000_to_3000.p",
+        validation_files_list = ["Sat_Nov_11_21:36:12_2017/predicated_entities_0_to_1000.p", "Sat_Nov_11_21:36:12_2017/predicated_entities_1000_to_2000.p"]
+
+        test_files_list = ["Sat_Nov_11_21:36:12_2017/predicated_entities_2000_to_3000.p",
                            "Sat_Nov_11_21:36:12_2017/predicated_entities_3000_to_4000.p",
                            "Sat_Nov_11_21:36:12_2017/predicated_entities_4000_to_5000.p",
                            "Sat_Nov_11_21:36:12_2017/predicated_entities_5000_to_6000.p",
@@ -313,6 +312,7 @@ def train(name="test",
                 file_index += 1
 
                 # load data from file
+                file_name = file_name.split(".")[0] + "_language_language_language_language_language_language_predcl.p"
                 file_path = os.path.join(entities_path, file_name)
                 file_handle = open(file_path, "rb")
                 train_entities = cPickle.load(file_handle)
@@ -320,7 +320,8 @@ def train(name="test",
                 shuffle(train_entities)
 
                 for entity in train_entities:
-
+                    #if not hasattr(entity, 'predicates_outputs_beliefs_language1'):
+                    #    continue
                     # set diagonal to be negative predicate (no relation for a single object)
                     indices = np.arange(entity.predicates_probes.shape[0])
                     entity.predicates_outputs_with_no_activation[indices, indices, :] = predicate_neg
@@ -358,6 +359,7 @@ def train(name="test",
                     feed_dict = {confidence_predicate_ph: entity.predicates_outputs_with_no_activation,
                                  confidence_object_ph: in_object_confidence,
                                  module.entity_bb_ph : obj_bb,
+                                 module.phase_ph: True,
                                  module.word_embed_entities_ph: embed_obj, module.word_embed_relations_ph: embed_pred,
                                  labels_predicate_ph: entity.predicates_labels, labels_object_ph: entity.objects_labels,
                                  labels_coeff_loss_ph: coeff_factor.reshape((-1)), module.lr_ph: lr}
@@ -436,7 +438,7 @@ def train(name="test",
                 total_predicate = 0
 
                 for file_name in validation_files_list:
-
+                    file_name = file_name.split(".")[0] + "_language_language_language_language_language_language_predcl.p"
                     # load data from file
                     file_path = os.path.join(entities_path, file_name)
                     file_handle = open(file_path, "rb")
@@ -444,7 +446,8 @@ def train(name="test",
                     file_handle.close()
 
                     for entity in validation_entities:
-
+                        #if not hasattr(entity, 'predicates_outputs_beliefs_language1'):
+                        #    continue
                         # set diagonal to be neg
                         indices = np.arange(entity.predicates_probes.shape[0])
                         entity.predicates_outputs_with_no_activation[indices, indices, :] = predicate_neg
@@ -488,6 +491,7 @@ def train(name="test",
                                      module.entity_bb_ph: obj_bb,
                                      module.word_embed_entities_ph: embed_obj,
                                      module.phase_ph: False,
+                                     module.word_embed_relations_ph: embed_pred,
                                      labels_predicate_ph: entity.predicates_labels,
                                      labels_object_ph: entity.objects_labels,
                                      labels_coeff_loss_ph: coeff_factor.reshape((-1))}

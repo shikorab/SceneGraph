@@ -44,7 +44,7 @@ class Module(object):
         self.layers = layers
         self.reg_factor = reg_factor
         self.activation_fn = tf.nn.relu
-        self.reuse = False
+        self.reuse = None
         # logging module
         logger = Logger()
 
@@ -60,7 +60,6 @@ class Module(object):
 
         # spatial features
         N = tf.slice(tf.shape(self.confidence_relation_ph), [0], [1], name="N")
-        self.extended_confidence_entity_shape = tf.concat((N, tf.shape(self.confidence_entity_ph)), 0)
         self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 4), name="obj_bb")
         self.extended_obj_bb_shape = tf.concat((N, tf.shape(self.entity_bb_ph)), 0)
         self.expand_obj_bb = tf.add(tf.zeros(self.extended_obj_bb_shape), self.entity_bb_ph, name="expand_obj_bb")
@@ -102,7 +101,9 @@ class Module(object):
                 confidence_entity = confidence_entity_temp
                 # store the confidence
                 self.out_confidence_entity_lst.append(confidence_entity_temp)
-
+            self.reuse = True
+        
+        #confidence_entity = confidence_entity_temp
         self.out_confidence_relation = confidence_relation
         self.out_confidence_entity = confidence_entity
         reshaped_relation_confidence = tf.reshape(confidence_relation, (-1, self.nof_predicates))
@@ -123,11 +124,12 @@ class Module(object):
         simple nn to convert features to confidence
         :param features: features tensor
         :param layers:
+        :param seperated_layer:
         :param out: output shape (used to reshape to required output shape)
         :param scope_name: tensorflow scope name
         :return: confidence
         """
-        with tf.variable_scope(scope_name):
+        with tf.variable_scope(scope_name) as scopevar:
 
             # first layer each feature seperatly
             features_h_lst = []
@@ -136,8 +138,8 @@ class Module(object):
             for feature in features:
                 if seperated_layer:
                     in_size = feature.shape[-1]._value
-                    if self.reuse:
-                        scope = str(index)
+                    #if self.reuse:
+                    scope = str(index)
                     h = tf.contrib.layers.fully_connected(feature, in_size, reuse=self.reuse, scope=scope,
                                                           activation_fn=self.activation_fn)
                     index += 1
@@ -146,18 +148,19 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
+            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
 
             for layer in layers:
-                if self.reuse:
-                    scope = str(index)
+                #if self.reuse:
+                scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
                                                       activation_fn=self.activation_fn)
+                h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
                 index += 1
 
-            if self.reuse:
-                scope = str(index)
+            #if self.reuse:
+            scope = str(index)
             y = tf.contrib.layers.fully_connected(h, out, reuse=self.reuse, scope=scope, activation_fn=last_activation)
-
         return y
 
     def sgp(self, in_confidence_relation, in_confidence_entity, scope_name="rnn_cell"):
@@ -171,57 +174,57 @@ class Module(object):
         """
         with tf.variable_scope(scope_name):
 
-            # confidence to probes
+            # relation features
             self.in_confidence_predicate_actual = in_confidence_relation
-            predicate_probes = tf.nn.softmax(in_confidence_relation)
-            self.predicate_probes = predicate_probes
-            in_confidence_predicate_norm = tf.log(predicate_probes + tf.constant(1e-10))
+            relation_probes = tf.nn.softmax(in_confidence_relation)
+            self.relation_probes = relation_probes
+            relation_features = tf.log(relation_probes + tf.constant(1e-10))
 
-            # FIXME check if can be removed
-            in_confidence_entity = self.confidence_entity_ph
-            self.in_confidence_object_actual = in_confidence_entity
-            object_probes = tf.nn.softmax(in_confidence_entity)
-            self.object_probes = object_probes
-            in_confidence_object_norm = tf.log(object_probes + tf.constant(1e-10))
+            # entity features
+            self.in_confidence_entity_actual = in_confidence_entity
+            entity_probes = tf.nn.softmax(in_confidence_entity)
+            self.entity_probes = entity_probes
+            entity_features_conf = tf.log(entity_probes + tf.constant(1e-10))
+            entity_features = tf.concat((entity_features_conf, self.entity_bb_ph), axis=1)
 
             # word embeddings
             # expand object word embed
             N = tf.slice(tf.shape(self.confidence_relation_ph), [0], [1], name="N")
             if self.gpi_type == "Linguistic":
-                self.obj_prediction = tf.argmax(self.object_probes, axis=1)
-                self.obj_prediction_val = tf.reduce_max(self.object_probes, axis=1)
-                self.embed_objects = tf.gather(self.word_embed_entities_ph, self.obj_prediction)
-                self.embed_objects = tf.transpose(
-                    tf.multiply(tf.transpose(self.embed_objects), self.obj_prediction_val))
-                in_extended_confidence_embed_shape = tf.concat((N, tf.shape(self.embed_objects)), 0)
-                in_confidence_object_norm = tf.concat((self.embed_objects, in_confidence_object_norm), axis=1)
+                self.entity_prediction = tf.argmax(self.entity_probes, axis=1)
+                self.entity_prediction_val = tf.reduce_max(self.entity_probes, axis=1)
+                self.embed_entities = tf.gather(self.word_embed_entities_ph, self.entity_prediction)
+                self.embed_entities = tf.transpose(
+                    tf.multiply(tf.transpose(self.embed_entities), self.entity_prediction_val))
+                in_extended_confidence_embed_shape = tf.concat((N, tf.shape(self.embed_entities)), 0)
+                entity_features = tf.concat((self.embed_entities, entity_features), axis=1)
 
-                self.pred_prediction = tf.argmax(self.predicate_probes[:, :, :self.nof_predicates - 1], axis=2)
-                self.pred_prediction_val = tf.reduce_max(self.predicate_probes[:, :, :self.nof_predicates - 1], axis=2)
-                self.embed_predicates = tf.gather(self.word_embed_relations_ph, tf.reshape(self.pred_prediction, [-1]))
-                self.embed_predicates = tf.transpose(
-                    tf.multiply(tf.transpose(self.embed_predicates), tf.reshape(self.pred_prediction_val, [-1])))
-                self.embed_predicates = tf.reshape(self.embed_predicates, in_extended_confidence_embed_shape)
-                in_confidence_predicate_norm = tf.concat((in_confidence_predicate_norm, self.embed_predicates), axis=2)
+                self.relation_prediction = tf.argmax(self.relation_probes[:, :, :self.nof_predicates - 1], axis=2)
+                self.relation_prediction_val = tf.reduce_max(self.relation_probes[:, :, :self.nof_predicates - 1], axis=2)
+                self.embed_relations = tf.gather(self.word_embed_relations_ph, tf.reshape(self.relation_prediction, [-1]))
+                self.embed_relations = tf.transpose(
+                    tf.multiply(tf.transpose(self.embed_relations), tf.reshape(self.relation_prediction_val, [-1])))
+                self.embed_relations = tf.reshape(self.embed_relations, in_extended_confidence_embed_shape)
+                relation_features = tf.concat((relation_features, self.embed_relations), axis=2)
 
-            # expand to NxN
-            self.predicate_opposite = tf.transpose(in_confidence_predicate_norm, perm=[1, 0, 2])
-            # expand object confidence    
-            self.expand_object_confidence = tf.add(tf.zeros(self.extended_confidence_entity_shape),
-                                                   in_confidence_object_norm,
-                                                   name="expand_object_confidence")
+            # append relations in both directions 
+            self.relation_features = tf.concat((relation_features, tf.transpose(relation_features, perm=[1, 0, 2])), axis=2)
+
+            # expand object confidence
+            self.extended_confidence_entity_shape = tf.concat((N, tf.shape(entity_features)), 0)
+            self.expand_object_features = tf.add(tf.zeros(self.extended_confidence_entity_shape),
+                                                 entity_features,
+                                                 name="expand_object_features")
             # expand subject confidence
-            self.expand_subject_confidence = tf.transpose(self.expand_object_confidence, perm=[1, 0, 2],
-                                                          name="expand_subject_confidence")
+            self.expand_subject_features = tf.transpose(self.expand_object_features, perm=[1, 0, 2],
+                                                        name="expand_subject_features")
 
             ##
             # Node Neighbours
-            # Subject features are self.expand_subject_confidence and self.bb_features[:3]
-            # Object features are self.expand_object_confidence and self.bb_features[4:]
-            # Pairwise featues are in_confidence_predicate_norm, self.predicate_opposite
-            self.object_ngbrs = [self.expand_object_confidence, self.expand_subject_confidence,
-                                 in_confidence_predicate_norm,
-                                 self.predicate_opposite, self.bb_features]
+            # Subject features are self.expand_subject_features and self.bb_features[:3]
+            # Object features are self.expand_object_features and self.bb_features[4:]
+            # Pairwise features are relation_features, self.predicate_opposite
+            self.object_ngbrs = [self.expand_object_features, self.expand_subject_features, relation_features]
 
             # Attention mechanism
             self.object_ngbrs_phi = self.nn(features=self.object_ngbrs, layers=[], out=500, scope_name="nn_phi")
@@ -243,7 +246,7 @@ class Module(object):
 
             ##
             # Nodes
-            self.object_ngbrs2 = [in_confidence_object_norm, self.object_ngbrs_phi_all]
+            self.object_ngbrs2 = [entity_features, self.object_ngbrs_phi_all]
             self.object_ngbrs2_phi = self.nn(features=self.object_ngbrs2, layers=[], out=500, scope_name="nn_phi2")
             # Attention mechanism
             if self.gpi_type == "FeatureAttention" or self.gpi_type == "Linguistic":
@@ -269,23 +272,22 @@ class Module(object):
             # The input is object features, subject features, relation features and the representation of the graph
             self.expand_obj_ngbrs_phi_all = tf.add(tf.zeros_like(self.object_ngbrs_phi), self.object_ngbrs_phi_all)
             self.expand_sub_ngbrs_phi_all = tf.transpose(self.expand_obj_ngbrs_phi_all, perm=[1, 0, 2])
-            self.predicate_all_features = [in_confidence_predicate_norm, self.predicate_opposite,
-                                           self.expand_object_confidence,
-                                           self.expand_subject_confidence, self.expand_sub_ngbrs_phi_all,
-                                           self.expand_obj_ngbrs_phi_all, expand_graph, self.bb_features]
+            self.relation_all_features = [relation_features, self.expand_object_features, self.expand_subject_features, self.expand_sub_ngbrs_phi_all,
+                                          self.expand_obj_ngbrs_phi_all, expand_graph]
 
-            pred_delta = self.nn(features=self.predicate_all_features, layers=self.layers, out=self.nof_predicates,
+            self.relation_all_features = [relation_features, self.expand_object_features, self.expand_subject_features, expand_graph]
+            pred_delta = self.nn(features=self.relation_all_features, layers=self.layers, out=self.nof_predicates,
                                  scope_name="nn_pred")
-            pred_forget_gate = self.nn(features=self.predicate_all_features, layers=[], out=1,
+            pred_forget_gate = self.nn(features=self.relation_all_features, layers=[], out=1,
                                        scope_name="nn_pred_forgate", last_activation=tf.nn.sigmoid)
-            out_confidence_predicate = pred_delta + pred_forget_gate * in_confidence_relation
+            out_confidence_relation = pred_delta + pred_forget_gate * in_confidence_relation
 
             ##
             # entity prediction
             # The input is entity features, entity neighbour features and the representation of the graph
             if self.including_object:
-                self.object_all_features = [in_confidence_object_norm, self.entity_bb_ph, expand_graph[0],
-                                            self.object_ngbrs_phi_all]
+                self.object_all_features = [entity_features, expand_graph[0], self.object_ngbrs_phi_all]
+                #self.object_all_features = [entity_features, expand_graph[0]]
                 obj_delta = self.nn(features=self.object_all_features, layers=self.layers, out=self.nof_objects,
                                     scope_name="nn_obj")
                 obj_forget_gate = self.nn(features=self.object_all_features, layers=[], out=self.nof_objects,
@@ -294,7 +296,7 @@ class Module(object):
             else:
                 out_confidence_object = in_confidence_entity
 
-            return out_confidence_predicate, out_confidence_object
+            return out_confidence_relation, out_confidence_object
 
     def module_loss(self, scope_name="loss"):
         """
