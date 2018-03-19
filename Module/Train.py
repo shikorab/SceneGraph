@@ -169,122 +169,13 @@ def train(name="test",
         else:
             sess.run(init)
 
-        # get object labels to ids and predicate labels to ids
-        # TBD _, object_ids, predicate_ids = get_filtered_data(filtered_data_file_name="mini_filtered_data", category='entities_visual_module')
-        object_ids = []
-        predicate_ids = []
         # train entities
-        entities_path = filesmanager.get_file_path("data.visual_genome.detections_v4")
+        entities_path = filesmanager.get_file_path("data.visual_genome.train")
 
-        train_files_list = ["Sat_Nov_11_20:43:42_2017/predicated_entities_0_to_1000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_1000_to_2000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_2000_to_3000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_3000_to_4000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_4000_to_5000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_5000_to_6000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_6000_to_7000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_7000_to_8000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_8000_to_9000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_9000_to_10000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_10000_to_11000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_11000_to_12000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_12000_to_13000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_13000_to_14000.p",
-                            "Sat_Nov_11_20:43:42_2017/predicated_entities_14000_to_15000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_0_to_1000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_1000_to_2000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_2000_to_3000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_3000_to_4000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_4000_to_5000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_5000_to_6000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_6000_to_7000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_7000_to_8000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_8000_to_9000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_9000_to_10000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_10000_to_11000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_11000_to_12000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_12000_to_13000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_13000_to_14000.p",
-                            "Sat_Nov_11_20:47:34_2017/predicated_entities_14000_to_15000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_0_to_1000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_1000_to_2000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_2000_to_3000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_3000_to_4000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_4000_to_5000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_5000_to_6000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_6000_to_7000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_7000_to_8000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_8000_to_9000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_9000_to_10000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_10000_to_11000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_11000_to_12000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_12000_to_13000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_13000_to_14000.p",
-                            "Sat_Nov_11_20:48:52_2017/predicated_entities_14000_to_15000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_0_to_1000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_1000_to_2000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_2000_to_3000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_3000_to_4000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_4000_to_5000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_5000_to_6000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_6000_to_7000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_7000_to_8000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_8000_to_9000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_9000_to_10000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_10000_to_11000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_11000_to_12000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_12000_to_13000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_13000_to_14000.p",
-                            "Sat_Nov_11_20:50:15_2017/predicated_entities_14000_to_15000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_0_to_1000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_1000_to_2000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_2000_to_3000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_3000_to_4000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_4000_to_5000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_5000_to_6000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_6000_to_7000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_7000_to_8000.p",
-                            "Sat_Nov_11_20:56:19_2017/predicated_entities_8000_to_9000.p",
-                                 "Sat_Nov_11_20:56:19_2017/predicated_entities_9000_to_10000.p",
-                                 "Sat_Nov_11_20:56:19_2017/predicated_entities_10000_to_11000.p",
-                                 "Sat_Nov_11_20:56:19_2017/predicated_entities_11000_to_12000.p",
-                                 "Sat_Nov_11_20:56:19_2017/predicated_entities_12000_to_13000.p"]
+        train_files_list = range(69)
+        shuffle(train_files_list)
 
-        validation_files_list = ["Sat_Nov_11_21:36:12_2017/predicated_entities_0_to_1000.p", "Sat_Nov_11_21:36:12_2017/predicated_entities_1000_to_2000.p"]
-
-        test_files_list = ["Sat_Nov_11_21:36:12_2017/predicated_entities_2000_to_3000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_3000_to_4000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_4000_to_5000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_5000_to_6000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_6000_to_7000.p",
-                           "Sat_Nov_11_21:36:12_2017/predicated_entities_7000_to_7500.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_0_to_1000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_1000_to_2000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_2000_to_3000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_3000_to_4000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_4000_to_5000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_5000_to_6000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_6000_to_7000.p",
-                           "Sat_Nov_11_21:38:29_2017/predicated_entities_7000_to_7500.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_0_to_1000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_1000_to_2000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_2000_to_3000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_3000_to_4000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_4000_to_5000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_5000_to_6000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_6000_to_7000.p",
-                           "Sat_Nov_11_21:42:07_2017/predicated_entities_7000_to_7500.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_0_to_1000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_1000_to_2000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_2000_to_3000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_3000_to_4000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_4000_to_5000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_5000_to_6000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_6000_to_7000.p",
-                           "Sat_Nov_11_21:43:18_2017/predicated_entities_7000_to_7500.p",
-                           "Sat_Nov_11_21:59:10_2017/predicated_entities_0_to_1000.p",
-                           "Sat_Nov_11_21:59:10_2017/predicated_entities_1000_to_2000.p",
-                           "Sat_Nov_11_21:59:10_2017/predicated_entities_2000_to_2422.p"]
+        validation_files_list = range(69, 73)
 
         # create one hot vector for predicate_negative (i.e. not labeled)
         predicate_neg = np.zeros(NOF_PREDICATES)
@@ -303,8 +194,6 @@ def train(name="test",
             accum_results = None
             total_loss = 0
             steps = []
-            # shuffle entities groups
-            shuffle(train_files_list)
             # read data
             file_index = -1
             for file_name in train_files_list:
@@ -312,21 +201,17 @@ def train(name="test",
                 file_index += 1
 
                 # load data from file
-                file_name = file_name.split(".")[0] + "_language_language_language_language_language_language_predcl.p"
-                file_path = os.path.join(entities_path, file_name)
+                file_path = os.path.join(entities_path, str(file_name) + ".p")
                 file_handle = open(file_path, "rb")
                 train_entities = cPickle.load(file_handle)
                 file_handle.close()
                 shuffle(train_entities)
 
                 for entity in train_entities:
-                    #if not hasattr(entity, 'predicates_outputs_beliefs_language1'):
-                    #    continue
                     # set diagonal to be negative predicate (no relation for a single object)
-                    indices = np.arange(entity.predicates_probes.shape[0])
+                    indices = np.arange(entity.predicates_outputs_with_no_activation.shape[0])
                     entity.predicates_outputs_with_no_activation[indices, indices, :] = predicate_neg
                     entity.predicates_labels[indices, indices, :] = predicate_neg
-                    entity.predicates_probes[indices, indices, :] = predicate_neg
 
                     # spatial features
                     obj_bb = np.zeros((len(entity.objects), 4))
@@ -381,9 +266,6 @@ def train(name="test",
                     # statistic
                     total_loss += loss_val
 
-                    # unmask for sanity check (getting results of feature extractor)
-                    # out_predicate_probes_val = entity.predicates_probes
-                    # out_object_probes_val = entity.objects_probs
                     results = test(entity.predicates_labels, entity.objects_labels, out_predicate_probes_val,
                                    out_object_probes_val)
 
@@ -434,28 +316,22 @@ def train(name="test",
             if epoch % TEST_ITERATIONS == 0:
                 total_test_loss = 0
                 accum_test_results = None
-                correct_predicate = 0
-                total_predicate = 0
 
                 for file_name in validation_files_list:
-                    file_name = file_name.split(".")[0] + "_language_language_language_language_language_language_predcl.p"
                     # load data from file
-                    file_path = os.path.join(entities_path, file_name)
+                    file_path = os.path.join(entities_path, str(file_name) + ".p")
                     file_handle = open(file_path, "rb")
                     validation_entities = cPickle.load(file_handle)
                     file_handle.close()
 
                     for entity in validation_entities:
-                        #if not hasattr(entity, 'predicates_outputs_beliefs_language1'):
-                        #    continue
                         # set diagonal to be neg
-                        indices = np.arange(entity.predicates_probes.shape[0])
+                        indices = np.arange(entity.predicates_outputs_with_no_activation.shape[0])
                         entity.predicates_outputs_with_no_activation[indices, indices, :] = predicate_neg
                         entity.predicates_labels[indices, indices, :] = predicate_neg
-                        entity.predicates_probes[indices, indices, :] = predicate_neg
 
                         # get shape of extended object to be used by the module
-                        extended_confidence_object_shape = np.asarray(entity.predicates_probes.shape)
+                        extended_confidence_object_shape = np.asarray(entity.predicates_outputs_with_no_activation.shape)
                         extended_confidence_object_shape[2] = NOF_OBJECTS
 
                         # spatial features
@@ -508,9 +384,6 @@ def train(name="test",
                         total_test_loss += loss_val
 
                         # statistics
-                        # uncomment for sanity check (to get features extractor statistics)
-                        # out_predicate_probes_val =entity.predicates_probes
-                        # out_object_probes_val = entity.objects_probs
                         results = test(entity.predicates_labels, entity.objects_labels,
                                        out_predicate_probes_val, out_object_probes_val)
 
@@ -521,12 +394,6 @@ def train(name="test",
                             for key in results:
                                 accum_test_results[key] += results[key]
 
-                        # eval per predicate
-                        correct_predicate_image, total_predicate_image = predicate_class_recall(
-                            entity.predicates_labels,
-                            out_predicate_probes_val)
-                        correct_predicate += np.sum(correct_predicate_image[:NOF_PREDICATES - 2])
-                        total_predicate += np.sum(total_predicate_image[:NOF_PREDICATES - 2])
 
                 # print stat
                 obj_accuracy = float(accum_test_results['obj_correct']) / accum_test_results['obj_total']
@@ -540,10 +407,9 @@ def train(name="test",
                 relationships_all_accuracy = float(accum_test_results['relationships_correct']) / accum_test_results[
                     'predicates_total']
 
-                logger.log("TEST - loss %f - obj %f - pred %f - rela %f - all_pred %f - all rela %f - top5 %f" %
+                logger.log("TEST - loss %f - obj %f - pred %f - rela %f - all_pred %f - all rela %f" %
                            (total_test_loss, obj_accuracy, predicate_pos_accuracy, relationships_pos_accuracy,
-                            predicate_all_accuracy, relationships_all_accuracy,
-                            float(correct_predicate) / total_predicate))
+                            predicate_all_accuracy, relationships_all_accuracy))
 
                 # save best module so far
                 if best_test_loss == -1 or total_test_loss < best_test_loss:
@@ -561,41 +427,6 @@ def train(name="test",
             # learning rate decay
             if (epoch % learning_rate_steps) == 0:
                 lr *= learning_rate_decay
-
-
-def predicate_class_recall(labels_predicate, out_confidence_predicate_val, k=5):
-    """
-    Predicate Classification - Examine the model performance on predicates classification in isolation from other factors
-    :param labels_predicate: labels of image predicates (each one is one hot vector) - shape (N, N, NOF_PREDICATES)
-    :param out_confidence_predicate_val: confidence of image predicates - shape (N, N, NOF_PREDICATES)
-    :param k: k most confident predictions to consider
-    :return: correct vector (number of times predicate gt appears in top k most confident predicates),
-             total vector ( number of gts per predicate)
-    """
-    correct = np.zeros(NOF_PREDICATES)
-    total = np.zeros(NOF_PREDICATES)
-
-    # one hot vector to actual gt labels
-    predicates_gt = np.argmax(labels_predicate, axis=2)
-
-    # number of objects in the image
-    N = out_confidence_predicate_val.shape[0]
-
-    # run over each prediction
-    for subject_index in range(N):
-        for object_index in range(N):
-            # get predicate class
-            predicate_class = predicates_gt[subject_index][object_index]
-            # get predicate probabilities
-            predicate_prob = out_confidence_predicate_val[subject_index][object_index]
-
-            max_k_predictions = np.argsort(predicate_prob)[-k:]
-            found = np.where(predicate_class == max_k_predictions)[0]
-            if len(found) != 0:
-                correct[predicate_class] += 1
-            total[predicate_class] += 1
-
-    return correct, total
 
 
 if __name__ == "__main__":

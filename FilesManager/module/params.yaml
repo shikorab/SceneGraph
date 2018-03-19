@@ -1,4 +1,4 @@
-name: gpi_ling_atten_rnn2_do_new_files_withoutf
+name: gpi_ling
 #gpi_type: "NeighbourAttention"
 #gpi_type: "FeatureAttention"
 gpi_type: "Linguistic"
@@ -6,7 +6,7 @@ nof_iterations: 10000
 learning_rate: 0.0001
 learning_rate_steps: 100
 learning_rate_decay: 0.5
-load_model_name: "gpi_ling_atten_rnn2_do_new_files_withf_best_module.ckpt"
+load_model_name: ""
 use_saved_model: False
 rnn_steps: 2
 batch_size: 200
@@ -15,5 +15,5 @@ lr_object_coeff: 4
 including_object: True
 layers: [500, 500, 500]
 reg_factor: 0.00
-gpu: 2
+gpu: 1
 

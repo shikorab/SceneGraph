@@ -32,8 +32,11 @@ language_module:
 
 data:
     visual_genome:
-        detections_v4:
-            name: "LabelPredictor/PredicatedFeatures/"
+        train:
+            name: "../Module/train"
             type: "dir"
             doc:  "dir with entities files. each file inclues 1000 entities"
-
+        test:
+            name: "../Module/test"
+            type: "dir"
+            doc:  "dir with entities files. each file inclues 1000 entities"

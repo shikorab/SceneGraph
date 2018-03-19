@@ -55,9 +55,10 @@ class Module(object):
         # confidence
         self.confidence_relation_ph = tf.placeholder(dtype=tf.float32, shape=(None, None, self.nof_predicates),
                                                      name="confidence_relation")
+        self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
         self.confidence_entity_ph = tf.placeholder(dtype=tf.float32, shape=(None, self.nof_objects),
                                                    name="confidence_entity")
-
+        self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
         # spatial features
         N = tf.slice(tf.shape(self.confidence_relation_ph), [0], [1], name="N")
         self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 4), name="obj_bb")
@@ -134,11 +135,9 @@ class Module(object):
             # first layer each feature seperatly
             features_h_lst = []
             index = 0
-            scope = None
             for feature in features:
                 if seperated_layer:
                     in_size = feature.shape[-1]._value
-                    #if self.reuse:
                     scope = str(index)
                     h = tf.contrib.layers.fully_connected(feature, in_size, reuse=self.reuse, scope=scope,
                                                           activation_fn=self.activation_fn)
@@ -148,17 +147,14 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
-            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
 
             for layer in layers:
-                #if self.reuse:
                 scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
                                                       activation_fn=self.activation_fn)
                 h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
                 index += 1
 
-            #if self.reuse:
             scope = str(index)
             y = tf.contrib.layers.fully_connected(h, out, reuse=self.reuse, scope=scope, activation_fn=last_activation)
         return y
@@ -346,12 +342,9 @@ class Module(object):
             loss += lossL2
 
             # minimize
-            # opt = tf.train.GradientDescentOptimizer(self.lr_ph)
+            #opt = tf.train.GradientDescentOptimizer(self.lr_ph)
             opt = tf.train.AdamOptimizer(self.lr_ph)
-            # train_step = opt.minimize(loss)
             # opt = tf.train.MomentumOptimizer(self.lr_ph, 0.9, use_nesterov=True)
-            # gradients = []
-            # grad_placeholder = []
             gradients = opt.compute_gradients(loss)
             # create placeholder to minimize in a batch
             grad_placeholder = [(tf.placeholder("float", shape=grad[0].get_shape()), grad[1]) for grad in gradients]
