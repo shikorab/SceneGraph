@@ -1,4 +1,4 @@
-name: gpi_ling
+name: gpi_ling3
 #gpi_type: "NeighbourAttention"
 #gpi_type: "FeatureAttention"
 gpi_type: "Linguistic"
@@ -15,5 +15,5 @@ lr_object_coeff: 4
 including_object: True
 layers: [500, 500, 500]
 reg_factor: 0.00
-gpu: 1
+gpu: 3
 

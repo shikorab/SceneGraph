@@ -7,7 +7,7 @@ from Utils.Logger import Logger
 
 class Module(object):
     """
-    RNN Module which gets as an input the confidence of predicates and objects
+    SGP Module which gets as an input the confidence of relations (predicates) and entities (objects)
     and outputs an improved confidence for predicates and objects
     """
 
@@ -18,14 +18,14 @@ class Module(object):
         """
         Construct module:
         - create input placeholders
-        - create rnn step
         - apply SGP rnn_steps times
         - create labels placeholders
         - create module loss and train_step
 
+        :type gpi_type: "Linguistic", "FeatureAttention", "NeighbourAttention"
         :param nof_predicates: nof predicate labels
         :param nof_objects: nof object labels
-        :param rnn_steps: rnn length
+        :param rnn_steps: number of time to apply SGP
         :param is_train: whether the module will be used to train or eval
         """
         # save input
@@ -55,10 +55,10 @@ class Module(object):
         # confidence
         self.confidence_relation_ph = tf.placeholder(dtype=tf.float32, shape=(None, None, self.nof_predicates),
                                                      name="confidence_relation")
-        self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
+        #self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
         self.confidence_entity_ph = tf.placeholder(dtype=tf.float32, shape=(None, self.nof_objects),
                                                    name="confidence_entity")
-        self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
+        #self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
         # spatial features
         N = tf.slice(tf.shape(self.confidence_relation_ph), [0], [1], name="N")
         self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 4), name="obj_bb")
@@ -123,11 +123,12 @@ class Module(object):
     def nn(self, features, layers, out, scope_name, seperated_layer=False, last_activation=None):
         """
         simple nn to convert features to confidence
-        :param features: features tensor
-        :param layers:
-        :param seperated_layer:
+        :param features: list of features tensor
+        :param layers: hidden layers
+        :param seperated_layer: First run FC one each feature tensor seperately
         :param out: output shape (used to reshape to required output shape)
         :param scope_name: tensorflow scope name
+        :param last_activation: activation function for the last layer (None means no activation)
         :return: confidence
         """
         with tf.variable_scope(scope_name) as scopevar:
@@ -147,7 +148,7 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
-
+            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
             for layer in layers:
                 scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
@@ -161,22 +162,22 @@ class Module(object):
 
     def sgp(self, in_confidence_relation, in_confidence_entity, scope_name="rnn_cell"):
         """
-        RNN stage - which get as an input a confidence of the predicates and objects and return an improved confidence of the predicates and the objects
+        SGP step - which get as an input a confidence of the predicates and objects and return an improved confidence of the predicates and the objects
         :return:
-        :param in_confidence_relation: predicate confidence of the last stage in the RNN
-        :param in_confidence_entity: object confidence of the last stage in the RNNS
-        :param scope_name: rnn stage scope
-        :return: improved predicates probabilties, improved predicate confidence,  improved object probabilites and improved object confidence
+        :param in_confidence_relation: in relation confidence
+        :param in_confidence_entity: in entity confidence
+        :param scope_name: sgp step scope
+        :return: improved relatiob probabilities, improved relation confidence,  improved entity probabilities and improved entity confidence
         """
         with tf.variable_scope(scope_name):
 
-            # relation features
+            # relation features normalization
             self.in_confidence_predicate_actual = in_confidence_relation
             relation_probes = tf.nn.softmax(in_confidence_relation)
             self.relation_probes = relation_probes
             relation_features = tf.log(relation_probes + tf.constant(1e-10))
 
-            # entity features
+            # entity features normalization
             self.in_confidence_entity_actual = in_confidence_entity
             entity_probes = tf.nn.softmax(in_confidence_entity)
             self.entity_probes = entity_probes
@@ -222,8 +223,9 @@ class Module(object):
             # Pairwise features are relation_features, self.predicate_opposite
             self.object_ngbrs = [self.expand_object_features, self.expand_subject_features, relation_features]
 
-            # Attention mechanism
+            # apply phi
             self.object_ngbrs_phi = self.nn(features=self.object_ngbrs, layers=[], out=500, scope_name="nn_phi")
+            # Attention mechanism
             if self.gpi_type == "FeatureAttention" or self.gpi_type == "Linguistic":
                 self.object_ngbrs_scores = self.nn(features=self.object_ngbrs, layers=[], out=500,
                                                    scope_name="nn_phi_atten")
@@ -243,35 +245,34 @@ class Module(object):
             ##
             # Nodes
             self.object_ngbrs2 = [entity_features, self.object_ngbrs_phi_all]
-            self.object_ngbrs2_phi = self.nn(features=self.object_ngbrs2, layers=[], out=500, scope_name="nn_phi2")
+            # apply alpha
+            self.object_ngbrs2_alpha = self.nn(features=self.object_ngbrs2, layers=[], out=500, scope_name="nn_phi2")
             # Attention mechanism
             if self.gpi_type == "FeatureAttention" or self.gpi_type == "Linguistic":
                 self.object_ngbrs2_scores = self.nn(features=self.object_ngbrs2, layers=[], out=500,
                                                     scope_name="nn_phi2_atten")
                 self.object_ngbrs2_weights = tf.nn.softmax(self.object_ngbrs2_scores, dim=0)
-                self.object_ngbrs2_phi_all = tf.reduce_sum(
-                    tf.multiply(self.object_ngbrs2_phi, self.object_ngbrs2_weights), axis=0)
+                self.object_ngbrs2_alpha_all = tf.reduce_sum(
+                    tf.multiply(self.object_ngbrs2_alpha, self.object_ngbrs2_weights), axis=0)
             elif self.gpi_type == "NeighbourAttention":
                 self.object_ngbrs2_scores = self.nn(features=self.object_ngbrs2, layers=[], out=1,
                                                     scope_name="nn_phi2_atten")
                 self.object_ngbrs2_weights = tf.nn.softmax(self.object_ngbrs2_scores, dim=0)
-                self.object_ngbrs2_phi_all = tf.reduce_sum(
-                    tf.multiply(self.object_ngbrs2_phi, self.object_ngbrs2_weights), axis=0)
+                self.object_ngbrs2_alpha_all = tf.reduce_sum(
+                    tf.multiply(self.object_ngbrs2_alpha, self.object_ngbrs2_weights), axis=0)
             else:
-                self.object_ngbrs2_phi_all = tf.reduce_mean(self.object_ngbrs2_phi, axis=0)
+                self.object_ngbrs2_alpha_all = tf.reduce_mean(self.object_ngbrs2_alpha, axis=0)
 
-            expand_graph_shape = tf.concat((N, N, tf.shape(self.object_ngbrs2_phi_all)), 0)
-            expand_graph = tf.add(tf.zeros(expand_graph_shape), self.object_ngbrs2_phi_all)
+            expand_graph_shape = tf.concat((N, N, tf.shape(self.object_ngbrs2_alpha_all)), 0)
+            expand_graph = tf.add(tf.zeros(expand_graph_shape), self.object_ngbrs2_alpha_all)
 
             ##
-            # relation prediction
+            # rho relation (relation prediction)
             # The input is object features, subject features, relation features and the representation of the graph
             self.expand_obj_ngbrs_phi_all = tf.add(tf.zeros_like(self.object_ngbrs_phi), self.object_ngbrs_phi_all)
             self.expand_sub_ngbrs_phi_all = tf.transpose(self.expand_obj_ngbrs_phi_all, perm=[1, 0, 2])
-            self.relation_all_features = [relation_features, self.expand_object_features, self.expand_subject_features, self.expand_sub_ngbrs_phi_all,
-                                          self.expand_obj_ngbrs_phi_all, expand_graph]
-
             self.relation_all_features = [relation_features, self.expand_object_features, self.expand_subject_features, expand_graph]
+
             pred_delta = self.nn(features=self.relation_all_features, layers=self.layers, out=self.nof_predicates,
                                  scope_name="nn_pred")
             pred_forget_gate = self.nn(features=self.relation_all_features, layers=[], out=1,
@@ -279,11 +280,10 @@ class Module(object):
             out_confidence_relation = pred_delta + pred_forget_gate * in_confidence_relation
 
             ##
-            # entity prediction
+            # rho entity (entity prediction)
             # The input is entity features, entity neighbour features and the representation of the graph
             if self.including_object:
                 self.object_all_features = [entity_features, expand_graph[0], self.object_ngbrs_phi_all]
-                #self.object_all_features = [entity_features, expand_graph[0]]
                 obj_delta = self.nn(features=self.object_all_features, layers=self.layers, out=self.nof_objects,
                                     scope_name="nn_obj")
                 obj_forget_gate = self.nn(features=self.object_all_features, layers=[], out=self.nof_objects,
@@ -296,10 +296,7 @@ class Module(object):
 
     def module_loss(self, scope_name="loss"):
         """
-        Set and minimize module loss
-        :param lr: init learning rate
-        :param lr_steps: steps to decay learning rate
-        :param lr_decay: factor to decay the learning rate by
+        SGP loss
         :param scope_name: tensor flow scope name
         :return: loss and train step
         """
@@ -307,7 +304,7 @@ class Module(object):
             # reshape to batch like shape
             shaped_labels_predicate = tf.reshape(self.labels_relation_ph, (-1, self.nof_predicates))
 
-            # predicate gt
+            # relation gt
             self.gt = tf.argmax(shaped_labels_predicate, axis=1)
 
             loss = 0
@@ -318,14 +315,14 @@ class Module(object):
                                                          (-1, self.nof_predicates))
 
                 # set predicate loss
-                self.predicate_ce_loss = tf.nn.softmax_cross_entropy_with_logits(labels=shaped_labels_predicate,
-                                                                                 logits=shaped_confidence_predicate,
-                                                                                 name="predicate_ce_loss")
+                self.relation_ce_loss = tf.nn.softmax_cross_entropy_with_logits(labels=shaped_labels_predicate,
+                                                                                logits=shaped_confidence_predicate,
+                                                                                name="relation_ce_loss")
 
-                self.loss_predicate = self.predicate_ce_loss
-                self.loss_predicate_weighted = tf.multiply(self.loss_predicate, self.labels_coeff_loss_ph)
+                self.loss_relation = self.relation_ce_loss
+                self.loss_relation_weighted = tf.multiply(self.loss_relation, self.labels_coeff_loss_ph)
 
-                loss += tf.reduce_sum(self.loss_predicate_weighted)
+                loss += tf.reduce_sum(self.loss_relation_weighted)
 
                 # set object loss
                 if self.including_object:
@@ -356,7 +353,7 @@ class Module(object):
         """
         get input place holders
         """
-        return self.confidence_relation_ph, self.confidence_entity_ph
+        return self.confidence_relation_ph, self.confidence_entity_ph, self.entity_bb_ph, self.word_embed_relations_ph, self.word_embed_entities_ph
 
     def get_output(self):
         """
