@@ -105,7 +105,7 @@ def train(name="test",
     :param gpu: gpu number to use for the training
     :return: nothing
     """
-    gpi_type = "Linguistic",
+    gpi_type = "Linguistic"
     including_object = True
     # get filesmanager
     filesmanager = FilesManager()
@@ -132,7 +132,6 @@ def train(name="test",
                     is_train=True,
                     learning_rate=learning_rate, learning_rate_steps=learning_rate_steps,
                     learning_rate_decay=learning_rate_decay,
-                    rnn_steps=rnn_steps,
                     lr_object_coeff=lr_object_coeff,
                     including_object=including_object,
                     layers=layers)
@@ -171,10 +170,10 @@ def train(name="test",
         # train images
         vg_train_path = filesmanager.get_file_path("data.visual_genome.train")
         # list of train files
-        train_files_list = range(71)
+        train_files_list = range(72)
         shuffle(train_files_list)
 
-        validation_files_list = range(71, 73)
+        validation_files_list = range(72, 73)
 
         # create one hot vector for predicate_negative (i.e. not labeled)
         relation_neg = np.zeros(NOF_PREDICATES)
@@ -435,22 +434,18 @@ if __name__ == "__main__":
     params = filemanager.load_file("sg_module.train.params")
 
     name = params["name"]
-    gpi_type = params["gpi_type"]
     learning_rate = params["learning_rate"]
     learning_rate_steps = params["learning_rate_steps"]
     learning_rate_decay = params["learning_rate_decay"]
     nof_iterations = params["nof_iterations"]
     load_model_name = params["load_model_name"]
     use_saved_model = params["use_saved_model"]
-    rnn_steps = params["rnn_steps"]
     batch_size = params["batch_size"]
     predicate_pos_neg_ratio = params["predicate_pos_neg_ratio"]
     lr_object_coeff = params["lr_object_coeff"]
-    including_object = params["including_object"]
     layers = params["layers"]
-    reg_factor = params["reg_factor"]
     gpu = params["gpu"]
 
-    train(name, gpi_type, nof_iterations, learning_rate, learning_rate_steps, learning_rate_decay, load_model_name,
-          use_saved_model, rnn_steps, batch_size, predicate_pos_neg_ratio, lr_object_coeff, including_object, layers,
-          reg_factor, gpu)
+    train(name, nof_iterations, learning_rate, learning_rate_steps, learning_rate_decay, load_model_name,
+          use_saved_model, batch_size, predicate_pos_neg_ratio, lr_object_coeff, layers,
+          gpu)

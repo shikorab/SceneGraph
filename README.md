@@ -1,7 +1,7 @@
 ## [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451)
 
 ## About this repository
-This repository contains an implementation of our best variant (Linguistic) of the Scene Graph Prediction (SGP) model introduced in the paper [Scene Graph Generation by Iterative Message Passing](https://arxiv.org/abs/1802.05451).
+This repository contains an implementation of our best variant (Linguistic) of the Scene Graph Prediction (SGP) model introduced in the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451).
 Specifically, the repository allow to run recall@k evaluation script on our pre-trained model or alternatively (1) train an SGP model (2) evaluate the trained model using recall@k evaluation script.
 
 ## Introduction
@@ -11,7 +11,7 @@ such that they form a coherent graph, known as a scene graph. In a scene graph, 
 
 ## About the implemented model
 Our model has two components: A Label Predictor (LP) that takes as input an image with bounding boxes and outputs a distribution over labels for each entity and relation.
-Then, a Scene Graph Predictor (SGP) that takes all label distributions and predicts more consistent label distributions jointly for all entities and relations.
+Then, a Scene Graph Predictor (SGP) that takes all label distributions and predicts more consistent label distributions jointly for all entities and relations. SGP satisfies the graph permutation invariance property intoduced in the paper.
 The repository includes just the SGP model which gets as input a label distribution that created a head by our LP over [VisualGenome dataset](https://visualgenome.org).
 The model implemented using [TensorFlow](https://www.tensorflow.org/)
 

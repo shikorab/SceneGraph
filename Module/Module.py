@@ -55,10 +55,10 @@ class Module(object):
         # confidence
         self.confidence_relation_ph = tf.placeholder(dtype=tf.float32, shape=(None, None, self.nof_predicates),
                                                      name="confidence_relation")
-        #self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
+        self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
         self.confidence_entity_ph = tf.placeholder(dtype=tf.float32, shape=(None, self.nof_objects),
                                                    name="confidence_entity")
-        #self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
+        self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
         # spatial features
         N = tf.slice(tf.shape(self.confidence_relation_ph), [0], [1], name="N")
         self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 4), name="obj_bb")
@@ -148,7 +148,7 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
-            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
+            #h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
             for layer in layers:
                 scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
