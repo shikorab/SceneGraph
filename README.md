@@ -2,7 +2,7 @@
 
 ## About this repository
 This repository contains an implementation of our best variant (Linguistic) of the Scene Graph Prediction (SGP) model introduced in the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451).
-Specifically, the repository allow to run recall@k evaluation script on our pre-trained model or alternatively (1) train an SGP model (2) evaluate the trained model using recall@k evaluation script.
+Specifically, the repository allow to run scene-graph classification (recall@100) evaluation script on our pre-trained model or alternatively (1) train an SGP model (2) evaluate the trained model using scene-graph classification (recall@100) evaluation script.
 
 ## Introduction
 In Scene-Graph classification task, the input is an image annotated with a set of rectangles that bound entities in the image, known as bounding boxes.
