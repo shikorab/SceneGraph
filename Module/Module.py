@@ -13,7 +13,7 @@ class Module(object):
 
     def __init__(self, gpi_type="Linguistic", nof_predicates=51, nof_objects=150, rnn_steps=2, is_train=True,
                  learning_rate=0.0001,
-                 learning_rate_steps=120, learning_rate_decay=0.5,
+                 learning_rate_steps=1000, learning_rate_decay=0.5,
                  including_object=False, layers=[500, 500, 500], reg_factor=0.0, lr_object_coeff=4):
         """
         Construct module:
@@ -55,19 +55,12 @@ class Module(object):
         # confidence
         self.confidence_relation_ph = tf.placeholder(dtype=tf.float32, shape=(None, None, self.nof_predicates),
                                                      name="confidence_relation")
-        self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
+        #self.confidence_relation_ph = tf.contrib.layers.dropout(self.confidence_relation_ph, keep_prob=0.9, is_training=self.phase_ph)
         self.confidence_entity_ph = tf.placeholder(dtype=tf.float32, shape=(None, self.nof_objects),
                                                    name="confidence_entity")
-        self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
+        #self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
         # spatial features
-        N = tf.slice(tf.shape(self.confidence_relation_ph), [0], [1], name="N")
         self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 4), name="obj_bb")
-        self.extended_obj_bb_shape = tf.concat((N, tf.shape(self.entity_bb_ph)), 0)
-        self.expand_obj_bb = tf.add(tf.zeros(self.extended_obj_bb_shape), self.entity_bb_ph, name="expand_obj_bb")
-        # expand subject bb
-        expand_sub_bb = tf.transpose(self.expand_obj_bb, perm=[1, 0, 2], name="expand_sub_bb")
-        self.expand_sub_bb = expand_sub_bb
-        self.bb_features = tf.concat((expand_sub_bb, self.expand_obj_bb), axis=2, name="bb_features")
 
         # word embeddings
         self.word_embed_entities_ph = tf.placeholder(dtype=tf.float32, shape=(self.nof_objects, self.embed_size),
@@ -148,7 +141,7 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
-            #h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
+            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
             for layer in layers:
                 scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
@@ -218,11 +211,7 @@ class Module(object):
 
             ##
             # Node Neighbours
-            # Subject features are self.expand_subject_features and self.bb_features[:3]
-            # Object features are self.expand_object_features and self.bb_features[4:]
-            # Pairwise features are relation_features, self.predicate_opposite
             self.object_ngbrs = [self.expand_object_features, self.expand_subject_features, relation_features]
-
             # apply phi
             self.object_ngbrs_phi = self.nn(features=self.object_ngbrs, layers=[], out=500, scope_name="nn_phi")
             # Attention mechanism

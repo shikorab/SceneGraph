@@ -33,10 +33,14 @@ language_module:
 data:
     visual_genome:
         train:
-            name: "../Module/train"
+            name: "../Module/data/train"
             type: "dir"
             doc:  "dir with entities files. each file inclues 1000 entities"
         test:
-            name: "../Module/test"
+            name: "../Module/data/test"
             type: "dir"
             doc:  "dir with entities files. each file inclues 1000 entities"
+        data:
+            name: "../Module"
+            type: "dir"
+            doc:  "dir with zip file and data folder"

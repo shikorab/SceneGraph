@@ -172,7 +172,10 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
     with tf.Session() as sess:
         if load_module_name is not None:
             # Restore variables from disk.
-            module_path = filesmanager.get_file_path("sg_module.train.saver")
+            if load_module_name=="gpi_linguistic_orig_best":
+                module_path = os.path.join(filesmanager.get_file_path("data.visual_genome.data"), "data")
+            else:
+                module_path = filesmanager.get_file_path("sg_module.train.saver")
             module_path_load = os.path.join(module_path, load_module_name + "_module.ckpt")
             if os.path.exists(module_path_load + ".index"):
                 saver.restore(sess, module_path_load)
@@ -284,9 +287,7 @@ if __name__ == "__main__":
     gpu = 2
     layers = [500, 500, 500]
     
-    #load_module_name = "gpi_ling_atten_rnn2_sdo2_best"
-    load_module_name = "gpi_ling_atten_rnn2_sdo_new_files_withoutf_sgd_best"
-    load_module_name = "gpi_ling_orig_best"
+    load_module_name = "gpi_linguistic_orig_best"
     k = 100
     eval(load_module_name, k, layers, gpu)
     exit()

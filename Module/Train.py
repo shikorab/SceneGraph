@@ -74,14 +74,14 @@ def test(labels_relation, labels_entity, out_confidence_relation_val, out_confid
     return results
 
 
-def train(name="test",
+def train(name="module",
           nof_iterations=100,
           learning_rate=0.0001,
           learning_rate_steps=1000,
           learning_rate_decay=0.5,
           load_module_name="module.ckpt",
           use_saved_module=False,
-          batch_size=200,
+          batch_size=20,
           pred_pos_neg_ratio=10,
           lr_object_coeff=4,
           layers=[500, 500, 500],
@@ -95,13 +95,10 @@ def train(name="test",
     :param learning_rate_decay: the factor to decay the learning rate
     :param load_module_name: name of already trained module weights to load
     :param use_saved_module: start from already train module
-    :param rnn_steps: how many times to apply SGP
     :param batch_size: number of images in each mini-batch
     :param pred_pos_neg_ratio: Set the loss ratio between positive and negatives (not labeled) predicates
     :param lr_object_coeff: Set the loss ratio between objects and predicates
-    :param including_object: Whether to  predict objects as well
     :param layers: list of sizes of the hidden layer of the predicate and object classifier
-    :param reg_factor: L2 regulizer factor
     :param gpu: gpu number to use for the training
     :return: nothing
     """
@@ -170,10 +167,12 @@ def train(name="test",
         # train images
         vg_train_path = filesmanager.get_file_path("data.visual_genome.train")
         # list of train files
-        train_files_list = range(72)
+        train_files_list = range(2, 72)
         shuffle(train_files_list)
 
-        validation_files_list = range(72, 73)
+        # Actual validation is 5 files.
+        # After tunning the hyper parameters, use just 2 files for early stopping.
+        validation_files_list = range(2)
 
         # create one hot vector for predicate_negative (i.e. not labeled)
         relation_neg = np.zeros(NOF_PREDICATES)
@@ -287,8 +286,8 @@ def train(name="test",
                         feed_grad_apply_dict[module.lr_ph] = lr
                         sess.run([train_step], feed_dict=feed_grad_apply_dict)
                         steps = []
-                # print stat - per file just for the first epoch
-                if epoch == 1:
+                # print stat - per file just for the first epoch - disabled!!
+                if epoch == 1 and False:
                     obj_accuracy = float(accum_results['entity_correct']) / accum_results['entity_total']
                     predicate_pos_accuracy = float(accum_results['relations_pos_correct']) / accum_results[
                         'relations_pos_total']
@@ -406,7 +405,7 @@ def train(name="test",
                 relationships_all_accuracy = float(accum_test_results['relationships_correct']) / accum_test_results[
                     'relations_total']
 
-                logger.log("TEST - loss %f - obj %f - pred %f - rela %f - all_pred %f - all rela %f" %
+                logger.log("VALIDATION - loss %f - obj %f - pred %f - rela %f - all_pred %f - all rela %f" %
                            (total_test_loss, obj_accuracy, predicate_pos_accuracy, relationships_pos_accuracy,
                             predicate_all_accuracy, relationships_all_accuracy))
 
