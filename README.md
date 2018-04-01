@@ -4,20 +4,19 @@
 
 
 ## Introduction
-In Scene-Graph classification task (see more works such as [2, 3, 4, 5, 6]), the input is an image annotated with a set of rectangles that bound entities in the image, known as bounding boxes. The goal is to label each bounding box with the correct entity category, and every pair of entities with their relation,
-such that they form a coherent graph, known as a scene graph. In a scene graph, nodes correspond to bounding-boxes labeled with the entity category and edges correspond to relations among entities.
+In scene graph prediction task (see more works such as [2, 3, 4, 5, 6]), the input is an image annotated with a set of bounding boxes. The goal is to label each bounding box with the correct entity category, and every pair of entities with their relation, such that they form a coherent graph, known as a scene graph.
 
-In the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451) (2018) [1] we present a new architecture for graph inference. We show that this architecture has the **following structural property**:
+In the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451) (2018) [1] we present a new architecture for graph inference that has the **following structural property**:
 on the one hand, the architecture is invariant to input permutations; 
 on the other hand, every permutation-invariant function can be implemented via this architecture.
 
-In this repository, we share our architecture implementation.
+In this repository, we share our architecture implementation for the task of scene graph prediction.
 
 ## Model implementation
 Our model has two components: A **Label Predictor (LP)** that takes as input an image with bounding boxes and outputs a distribution over labels for each entity and relation.
 Then, a **Scene Graph Predictor (SGP)** that takes all label distributions and predicts more consistent label distributions jointly for all entities and relations. SGP satisfies the graph permutation invariance property intoduced in the paper.
 The repository includes just the SGP model which gets as input a label distribution that created a head by our LP over [VisualGenome dataset](https://visualgenome.org).
-The model implemented using [TensorFlow](https://www.tensorflow.org/).
+The model is implemented in [TensorFlow](https://www.tensorflow.org/).
 
 
 ## SGP architecture
@@ -25,19 +24,18 @@ Our SGP implementation is using an iteratively RNN to process predictions. Each 
 
 <img src="sgp_arch_git.png" width="750">
 
-A schematic representation of the architecture. Given an image, our LP model outputs initial predictions ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D%2C%20Z_%7Bi%2Cj%7D). Then, our SGP model, processed with ![equation](http://latex.codecogs.com/gif.latex?%5Cphi_%7Bi%2Cj%7D) element wise. Next, they are summed to create vector ![equation](http://latex.codecogs.com/gif.latex?S_%7Bi%7D), which is concatenated with ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D). Then, ![equation](http://latex.codecogs.com/gif.latex?%5Calpha) is applied, and summing creates the graph representation. Finally, ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Bentity%7D) classifies objects and ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Brelation%7D) classifies relation, meaning outputs better predictions. The process of SGP could be repeated iteratively.
+A schematic representation of the architecture. Given an image, our LP model outputs initial predictions ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D%2C%20Z_%7Bi%2Cj%7D). Then, our SGP model, computes each ![equation](http://latex.codecogs.com/gif.latex?%5Cphi_%7Bi%2Cj%7D) element wise. Next, they are summed to create vector ![equation](http://latex.codecogs.com/gif.latex?S_%7Bi%7D), which is concatenated with ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D). Then, ![equation](http://latex.codecogs.com/gif.latex?%5Calpha) is applied, and another summation creates the graph representation. Finally, ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Bentity%7D) classifies objects and ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Brelation%7D) classifies relation. The process of SGP could be repeated iteratively (in the paper we repeat it 3 times).
 
 For more information, please look at the code (Module/Module.py file) and the paper.
 
 
 ## Attention with SGP architecture
-Our SGP architecture is using attention in feature-level for each node during inference. 
-We weight the significance of each feature per node, such that the architecture has the degree of freedom required for choosing which feature from the node surrounding contributes the most information.
+Our SGP architecture uses attention at the feature-level for each node during inference. 
+We weight the significance of each feature per node, such that the network can choose which features from adjacent nodes contributes the most information.
 
 <img src="qualitive_results_att_boxes.png" width="750">
 
-An example of attention per entities and attention of all nodes together with their neighbors. The size and location of objects provide a key signal to the attention mechanism. The model assigns a higher confidence for the label "tie" when the label "shirt" is detected (third panel from the left). Similarly, the model assigns a higher confidence for the label "eye" when it is located near "hair".
-
+An example of attention per entities and global attention over all nodes. The size and location of objects provide a key signal to the attention mechanism. The model assigns higher confidence for the label "tie" when the label "shirt" is detected (third panel from the left). Similarly, the model assigns a higher confidence for the label "eye" when it is located near "hair".
 
 ## Dependencies
 To get started with the framework, install the following dependencies:
