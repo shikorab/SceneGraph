@@ -51,13 +51,13 @@ Run `"pip install -r requirements.txt"`  - to install all the requirements.
 
 ## Usage
 1. Run `"python Run.py download"` to download and extract train, validation and test data (the data includes the initial label distribution that created a head by our LP)
-2. Run `"python Run.py eval gpi_linguistic_orig_best <gpu-number>"` to evaluate the pre-trained model (recall@100 SG Classification).
-3. Run `"python Run.py train gpi_linguistic_new <gpu-number>"` to train a new model.
-4. Run `"python Run.py eval gpi_linguistic_new_best <gpu-number>"` to evaluate the new model. (recall@100 SG Classification).
+2. Run `"python Run.py eval gpi_linguistic_pretrained <gpu-number>"` to evaluate the pre-trained model of our best variant, linguistic with multi-head attention. (recall@100 SG Classification).
+3. Run `"python Run.py train gpi_linguistic <gpu-number>"` to train a new model (linguistic with multi-head attention).
+4. Run `"python Run.py eval gpi_linguistic_best <gpu-number>"` to evaluate the new model. (recall@100 SG Classification).
 
 
 ## About this repository
-This repository contains an implementation of our best variant (Linguistic) of the Scene Graph Prediction (SGP) model introduced in the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451).
+This repository contains an implementation of our best variant (Linguistic with multi-head attention) of the Scene Graph Prediction (SGP) model introduced in the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451).
 Specifically, the repository allow to run scene-graph classification (recall@100) evaluation script on our pre-trained model or alternatively (1) train an SGP model (2) evaluate the trained model using scene-graph classification (recall@100) evaluation script.
 
 

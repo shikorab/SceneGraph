@@ -172,7 +172,7 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
     with tf.Session() as sess:
         if load_module_name is not None:
             # Restore variables from disk.
-            if load_module_name=="gpi_linguistic_orig_best":
+            if load_module_name=="gpi_linguistic_pretrained":
                 module_path = os.path.join(filesmanager.get_file_path("data.visual_genome.data"), "data")
             else:
                 module_path = filesmanager.get_file_path("sg_module.train.saver")
