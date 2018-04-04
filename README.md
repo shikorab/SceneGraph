@@ -14,9 +14,10 @@ on the other hand, every permutation-invariant function can be implemented via t
 In this repository, we share our architecture implementation for the task of scene graph prediction.
 
 ## Model implementation
-Our model has two components: A **Label Predictor (LP)** that takes as input an image with bounding boxes and outputs a distribution over labels for each entity and relation.
-Then, a **Scene Graph Predictor (SGP)** that takes all label distributions and predicts more consistent label distributions jointly for all entities and relations. SGP satisfies the graph permutation invariance property intoduced in the paper.
-The repository includes just the SGP model which gets as input a label distribution that created a head by our LP over [VisualGenome dataset](https://visualgenome.org).
+Our model has two components. The first is a **Label Predictor (LP)** which takes as input an image with bounding boxes and outputs a distribution over labels for each entity and relation.
+The second is a **Scene Graph Predictor (SGP)** that takes these distributions and processes these to obtain new labels. SGP satisfies the graph permutation invariance property intoduced in the paper.
+The repository includes just the SGP model. The LP model was trained separately and its parameters can be downloaded, as explained below.
+<!--- which  as input a label distribution that created a head by our LP over [VisualGenome dataset](https://visualgenome.org). --->
 The model is implemented in [TensorFlow](https://www.tensorflow.org/).
 
 
@@ -51,7 +52,7 @@ Run `"pip install -r requirements.txt"`  - to install all the requirements.
 
 
 ## Usage
-1. Run `"python Run.py download"` to download and extract train, validation and test data (the data includes the initial label distribution that created a head by our LP)
+1. Run `"python Run.py download"` to download and extract train, validation and test data. The data contains the result of applying the LP model to the VisualGenome data. The LP model takes two weeks to run, so for simplicity we do not include its implementation as part of the package. 
 2. Run `"python Run.py eval gpi_linguistic_pretrained <gpu-number>"` to evaluate the pre-trained model of our best variant, linguistic with multi-head attention. (recall@100 SG Classification).
 3. Run `"python Run.py train gpi_linguistic <gpu-number>"` to train a new model (linguistic with multi-head attention).
 4. Run `"python Run.py eval gpi_linguistic_best <gpu-number>"` to evaluate the new model. (recall@100 SG Classification).
