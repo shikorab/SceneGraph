@@ -4,7 +4,8 @@
 
 
 ## Introduction
-In scene graph prediction task (see more works such as [2, 3, 4, 5, 6]), the input is an image annotated with a set of bounding boxes. The goal is to label each bounding box with the correct entity category, and every pair of entities with their relation, such that they form a coherent graph, known as a scene graph.
+Scene graph prediction is the task of mapping an image into a set of bounding boxes, along with their categories and relations (e.g., see [2, 3, 4, 5, 6]).
+<!--- In the scene graph prediction task (e.g., see [2, 3, 4, 5, 6]), the input is an image annotated with a set of bounding boxes. The goal is to label each bounding box with the correct entity category, and every pair of entities with their relation, such that they form a coherent graph, known as a scene graph. --->
 
 In the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451) (2018) [1] we present a new architecture for graph inference that has the **following structural property**:
 on the one hand, the architecture is invariant to input permutations; 
