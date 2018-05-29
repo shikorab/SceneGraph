@@ -60,6 +60,7 @@ Run `"pip install -r requirements.txt"`  - to install all the requirements.
 
 ## About this repository
 This repository contains an implementation of our best variant (Linguistic with multi-head attention) of the Scene Graph Prediction (SGP) model introduced in the paper [Scene Graphs with Permutation-Invariant Structured Prediction](https://arxiv.org/abs/1802.05451).
+(The repsitory updated for version 1 of the paper - the results of latest version will be published ×in the future).
 Specifically, the repository allow to run scene-graph classification (recall@100) evaluation script on our pre-trained model or alternatively (1) train an SGP model (2) evaluate the trained model using scene-graph classification (recall@100) evaluation script.
 
 

@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
         # Download Data
         logger.log("Download Data ...")
-        url = "http://www.nlp.cs.tau.ac.il/scene_graph/data.zip"
+        url = "http://www.cs.tau.ac.il/~taunlp/scene_graph/data.zip"
         urllib.urlretrieve(url, file_name)
 
         # Extract data
