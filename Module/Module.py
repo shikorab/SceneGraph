@@ -60,7 +60,7 @@ class Module(object):
                                                    name="confidence_entity")
         #self.confidence_entity_ph = tf.contrib.layers.dropout(self.confidence_entity_ph, keep_prob=0.9, is_training=self.phase_ph)
         # spatial features
-        self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 4), name="obj_bb")
+        self.entity_bb_ph = tf.placeholder(dtype=tf.float32, shape=(None, 14), name="obj_bb")
 
         # word embeddings
         self.word_embed_entities_ph = tf.placeholder(dtype=tf.float32, shape=(self.nof_objects, self.embed_size),
@@ -141,12 +141,12 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
-            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
+            #h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
             for layer in layers:
                 scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
                                                       activation_fn=self.activation_fn)
-                h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
+                #h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
                 index += 1
 
             scope = str(index)
@@ -267,7 +267,7 @@ class Module(object):
             pred_forget_gate = self.nn(features=self.relation_all_features, layers=[], out=1,
                                        scope_name="nn_pred_forgate", last_activation=tf.nn.sigmoid)
             out_confidence_relation = pred_delta + pred_forget_gate * in_confidence_relation
-
+            
             ##
             # rho entity (entity prediction)
             # The input is entity features, entity neighbour features and the representation of the graph

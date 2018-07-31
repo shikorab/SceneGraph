@@ -14,11 +14,10 @@ on the other hand, every permutation-invariant function can be implemented via t
 In this repository, we share our architecture implementation for the task of scene graph prediction.
 
 ## Model implementation
-Our model has two components. The first is a **Label Predictor (LP)** which takes as input an image with bounding boxes and outputs a distribution over labels for each entity and relation.
-The second is a **Scene Graph Predictor (SGP)** that takes these distributions and processes these to obtain new labels. SGP satisfies the graph permutation invariance property intoduced in the paper.
-The repository includes just the SGP model. The LP model was trained separately and its parameters can be downloaded, as explained below.
-<!--- which  as input a label distribution that created a head by our LP over [VisualGenome dataset](https://visualgenome.org). --->
+**Scene Graph Predictor (SGP)** gets as an input inital confidience distributions per entity and relation and processes these to obtain new labels. SGP satisfies the graph permutation invariance property intoduced in the paper.
 The model is implemented in [TensorFlow](https://www.tensorflow.org/).
+For the initial confidence distributions per entity and relation, we simply re-use features learned by the baseline model from Zellers et al. (2017). (git repositiry https://github.com/rowanz/neural-motifs)
+
 
 
 ## SGP architecture
@@ -26,7 +25,7 @@ Our SGP implementation is using an iteratively RNN to process predictions. Each 
 
 <img src="sgp_arch_git.png" width="750">
 
-A schematic representation of the architecture. Given an image, our LP model outputs initial predictions ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D%2C%20Z_%7Bi%2Cj%7D). Then, our SGP model, computes each ![equation](http://latex.codecogs.com/gif.latex?%5Cphi_%7Bi%2Cj%7D) element wise. Next, they are summed to create vector ![equation](http://latex.codecogs.com/gif.latex?S_%7Bi%7D), which is concatenated with ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D). Then, ![equation](http://latex.codecogs.com/gif.latex?%5Calpha) is applied, and another summation creates the graph representation. Finally, ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Bentity%7D) classifies objects and ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Brelation%7D) classifies relation. The process of SGP could be repeated iteratively (in the paper we repeat it 3 times).
+A schematic representation of the architecture. Given an image, a Label predictor outputs initial predictions ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D%2C%20Z_%7Bi%2Cj%7D). Then, our SGP model, computes each ![equation](http://latex.codecogs.com/gif.latex?%5Cphi_%7Bi%2Cj%7D) element wise. Next, they are summed to create vector ![equation](http://latex.codecogs.com/gif.latex?S_%7Bi%7D), which is concatenated with ![equation](http://latex.codecogs.com/gif.latex?Z_%7Bi%7D). Then, ![equation](http://latex.codecogs.com/gif.latex?%5Calpha) is applied, and another summation creates the graph representation. Finally, ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Bentity%7D) classifies objects and ![equation](http://latex.codecogs.com/gif.latex?%5Crho_%7Brelation%7D) classifies relation. The process of SGP could be repeated iteratively (in the paper we repeat it 3 times).
 
 For more information, please look at the code (Module/Module.py file) and the paper.
 
@@ -52,7 +51,7 @@ Run `"pip install -r requirements.txt"`  - to install all the requirements.
 
 
 ## Usage
-1. Run `"python Run.py download"` to download and extract train, validation and test data. The data contains the result of applying the LP model to the VisualGenome data. The LP model takes two weeks to run, so for simplicity we do not include its implementation as part of the package. 
+1. Run `"python Run.py download"` to download and extract train, validation and test data. The data already contains the result of applying the baseline detecor over the VisualGenome data. 
 2. Run `"python Run.py eval gpi_linguistic_pretrained <gpu-number>"` to evaluate the pre-trained model of our best variant, linguistic with multi-head attention. (recall@100 SG Classification).
 3. Run `"python Run.py train gpi_linguistic <gpu-number>"` to train a new model (linguistic with multi-head attention).
 4. Run `"python Run.py eval gpi_linguistic_best <gpu-number>"` to evaluate the new model. (recall@100 SG Classification).

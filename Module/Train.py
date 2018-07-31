@@ -187,6 +187,7 @@ def train(name="module",
         # train module
         lr = learning_rate
         best_test_loss = -1
+        baseline_path = filesmanager.get_file_path("data.visual_genome.train_baseline")
         for epoch in xrange(1, nof_iterations):
             accum_results = None
             total_loss = 0
@@ -205,23 +206,48 @@ def train(name="module",
                 shuffle(train_images)
 
                 for image in train_images:
+                    # load initial belief by baseline detector
+                    file_path = os.path.join(baseline_path, str(image.image.id) + ".p")
+                    if not os.path.exists(file_path):
+                        continue
+                    file_handle = open(file_path, "rb")
+                    decetctor_data = cPickle.load(file_handle)
+                    file_handle.close()
+                    image.predicates_outputs_with_no_activation = decetctor_data["rel_dist_mapped"]
+                    image.objects_outputs_with_no_activations = decetctor_data["obj_dist_mapped"]
+
                     # set diagonal to be negative predicate (no relation for a single object)
                     indices = np.arange(image.predicates_outputs_with_no_activation.shape[0])
                     image.predicates_outputs_with_no_activation[indices, indices, :] = relation_neg
                     image.predicates_labels[indices, indices, :] = relation_neg
 
                     # spatial features
-                    entity_bb = np.zeros((len(image.objects), 4))
+                    entity_bb = np.zeros((len(image.objects), 14))
                     for obj_id in range(len(image.objects)):
                         entity_bb[obj_id][0] = image.objects[obj_id].x / 1200.0
                         entity_bb[obj_id][1] = image.objects[obj_id].y / 1200.0
                         entity_bb[obj_id][2] = (image.objects[obj_id].x + image.objects[obj_id].width) / 1200.0
                         entity_bb[obj_id][3] = (image.objects[obj_id].y + image.objects[obj_id].height) / 1200.0
+                        entity_bb[obj_id][4] = image.objects[obj_id].x
+                        entity_bb[obj_id][5] = -1 * image.objects[obj_id].x
+                        entity_bb[obj_id][6] = image.objects[obj_id].y
+                        entity_bb[obj_id][7] = -1 * image.objects[obj_id].y 
+                        entity_bb[obj_id][8] = image.objects[obj_id].width * image.objects[obj_id].height
+                        entity_bb[obj_id][9] = -1 * image.objects[obj_id].width * image.objects[obj_id].height                     
+                    entity_bb[:, 4] = np.argsort(entity_bb[:, 4])
+                    entity_bb[:, 5] = np.argsort(entity_bb[:, 5])
+                    entity_bb[:, 6] = np.argsort(entity_bb[:, 6])
+                    entity_bb[:, 7] = np.argsort(entity_bb[:, 7])
+                    entity_bb[:, 8] = np.argsort(entity_bb[:, 8])
+                    entity_bb[:, 9] = np.argsort(entity_bb[:, 9])
+                    entity_bb[:, 10] = np.argsort(np.max(image.objects_outputs_with_no_activations, axis=1))
+                    entity_bb[:, 11] = np.argsort(-1 * np.max(image.objects_outputs_with_no_activations, axis=1))
+                    entity_bb[:, 12] = np.arange(entity_bb.shape[0])
+                    entity_bb[:, 13] = np.arange(entity_bb.shape[0], 0, -1)
 
                     # filter non mixed cases
                     relations_neg_labels = image.predicates_labels[:, :, NOF_PREDICATES - 1:]
-                    if np.sum(image.predicates_labels[:, :, :NOF_PREDICATES - 2]) == 0 or np.sum(
-                            relations_neg_labels) == 0:
+                    if np.sum(image.predicates_labels[:, :, :NOF_PREDICATES - 1]) == 0:
                         continue
 
                     if including_object:
@@ -287,7 +313,7 @@ def train(name="module",
                         sess.run([train_step], feed_dict=feed_grad_apply_dict)
                         steps = []
                 # print stat - per file just for the first epoch - disabled!!
-                if epoch == 1 and False:
+                if epoch == 1:
                     obj_accuracy = float(accum_results['entity_correct']) / accum_results['entity_total']
                     predicate_pos_accuracy = float(accum_results['relations_pos_correct']) / accum_results[
                         'relations_pos_total']
@@ -323,6 +349,15 @@ def train(name="module",
                     file_handle.close()
 
                     for image in validation_images:
+                        file_path = os.path.join(baseline_path, str(image.image.id) + ".p")
+                        if not os.path.exists(file_path):           
+                            continue            
+                        file_handle = open(file_path, "rb")
+                        detector_data = cPickle.load(file_handle)
+                        file_handle.close()
+
+                        image.predicates_outputs_with_no_activation = detector_data["rel_dist_mapped"]
+                        image.objects_outputs_with_no_activations = detector_data["obj_dist_mapped"]
                         # set diagonal to be neg
                         indices = np.arange(image.predicates_outputs_with_no_activation.shape[0])
                         image.predicates_outputs_with_no_activation[indices, indices, :] = relation_neg
@@ -333,17 +368,32 @@ def train(name="module",
                         extended_confidence_object_shape[2] = NOF_OBJECTS
 
                         # spatial features
-                        entity_bb = np.zeros((len(image.objects), 4))
+                        entity_bb = np.zeros((len(image.objects), 14))
                         for obj_id in range(len(image.objects)):
                             entity_bb[obj_id][0] = image.objects[obj_id].x / 1200.0
                             entity_bb[obj_id][1] = image.objects[obj_id].y / 1200.0
                             entity_bb[obj_id][2] = (image.objects[obj_id].x + image.objects[obj_id].width) / 1200.0
                             entity_bb[obj_id][3] = (image.objects[obj_id].y + image.objects[obj_id].height) / 1200.0
+                            entity_bb[obj_id][4] = image.objects[obj_id].x
+                            entity_bb[obj_id][5] = -1 * image.objects[obj_id].x
+                            entity_bb[obj_id][6] = image.objects[obj_id].y
+                            entity_bb[obj_id][7] = -1 * image.objects[obj_id].y 
+                            entity_bb[obj_id][8] = image.objects[obj_id].width * image.objects[obj_id].height
+                            entity_bb[obj_id][9] = -1 * image.objects[obj_id].width * image.objects[obj_id].height                     
+                        entity_bb[:, 4] = np.argsort(entity_bb[:, 4])
+                        entity_bb[:, 5] = np.argsort(entity_bb[:, 5])
+                        entity_bb[:, 6] = np.argsort(entity_bb[:, 6])
+                        entity_bb[:, 7] = np.argsort(entity_bb[:, 7])
+                        entity_bb[:, 8] = np.argsort(entity_bb[:, 8])
+                        entity_bb[:, 9] = np.argsort(entity_bb[:, 9])
+                        entity_bb[:, 10] = np.argsort(np.max(image.objects_outputs_with_no_activations, axis=1))
+                        entity_bb[:, 11] = np.argsort(-1 * np.max(image.objects_outputs_with_no_activations, axis=1))
+                        entity_bb[:, 12] = np.arange(entity_bb.shape[0])
+                        entity_bb[:, 13] = np.arange(entity_bb.shape[0], 0, -1)
 
                         # filter non mixed cases
                         relations_neg_labels = image.predicates_labels[:, :, NOF_PREDICATES - 1:]
-                        if np.sum(image.predicates_labels[:, :, :NOF_PREDICATES - 2]) == 0 or np.sum(
-                                relations_neg_labels) == 0:
+                        if np.sum(image.predicates_labels[:, :, :NOF_PREDICATES - 1]) == 0:
                             continue
 
                         # give lower weight to negatives

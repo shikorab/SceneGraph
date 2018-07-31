@@ -36,10 +36,18 @@ data:
             name: "../Module/data/train"
             type: "dir"
             doc:  "dir with entities files. each file inclues 1000 entities"
+        train_baseline:
+            name: "../Module/data/train/baseline"
+            type: "dir"
+            doc:  "dir with baseline confidence per each relation and entity"
         test:
             name: "../Module/data/test"
             type: "dir"
             doc:  "dir with entities files. each file inclues 1000 entities"
+        test_baseline:
+            name: "../Module/data/test/baseline"
+            type: "dir"
+            doc: "dir with baseline confidence per each relation and entity"
         data:
             name: "../Module"
             type: "dir"

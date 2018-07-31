@@ -15,8 +15,17 @@ import matplotlib.pyplot
 matplotlib.pyplot.switch_backend('agg')
 import time
 
+def iou(box_a, box_b):
+    union_area = (max(box_a[2], box_b[2]) - min(box_a[0], box_b[0]) + 1) * (max(box_a[3], box_b[3]) - min(box_a[1], box_b[1]) + 1) 
+    overlap_w = min(box_a[2], box_b[2]) - max(box_a[0], box_b[0]) + 1
+    if overlap_w <= 0:
+        return 0
+    overlap_h = min(box_a[3], box_b[3]) - max(box_a[1], box_b[1]) + 1
+    if overlap_h <= 0:
+        return 0
+    return float(overlap_w * overlap_h) / union_area
 
-def eval_image(labels_relation, labels_entity, out_confidence_relation_val, out_confidence_entity_val, k=100):
+def eval_image(entity, labels_relation, labels_entity, out_confidence_relation_val, out_confidence_entity_val, k=100):
     """
     Scene Graph Classification -
     R@k metric (measures the fraction of ground truth relationships
@@ -30,7 +39,7 @@ def eval_image(labels_relation, labels_entity, out_confidence_relation_val, out_
                          number of the gt triplets
     """
     # iterate over each relation to predict and find k highest predictions
-    top_predictions = np.zeros((0, 6))
+    top_predictions = np.zeros((0, 12))
 
     # results per relation
     per_relation_correct = np.zeros(NOF_PREDICATES)
@@ -53,25 +62,32 @@ def eval_image(labels_relation, labels_entity, out_confidence_relation_val, out_
                 continue
 
             # create entry with the scores
-            triplet_prediction = np.zeros((1, 6))
-            triplet_prediction[0][0] = subject_index
-            triplet_prediction[0][1] = object_index
-            triplet_prediction[0][2] = entity_pred[subject_index]
-            triplet_prediction[0][3] = relation_pred[subject_index][object_index]
-            triplet_prediction[0][4] = entity_pred[object_index]
-            triplet_prediction[0][5] = relation_scores[subject_index][object_index] * entity_scores[subject_index] * \
+            triplet_prediction = np.zeros((1, 12))
+            triplet_prediction[0][0] = entity.objects[subject_index].x
+            triplet_prediction[0][1] = entity.objects[subject_index].y
+            triplet_prediction[0][2] = entity.objects[subject_index].x + entity.objects[subject_index].width
+            triplet_prediction[0][3] = entity.objects[subject_index].y + entity.objects[subject_index].height
+            triplet_prediction[0][4] = entity.objects[object_index].x
+            triplet_prediction[0][5] = entity.objects[object_index].y
+            triplet_prediction[0][6] = entity.objects[object_index].x + entity.objects[object_index].width
+            triplet_prediction[0][7] = entity.objects[object_index].y + entity.objects[object_index].height
+            
+            triplet_prediction[0][8] = entity_pred[subject_index]
+            triplet_prediction[0][9] = relation_pred[subject_index][object_index]
+            triplet_prediction[0][10] = entity_pred[object_index]
+            triplet_prediction[0][11] = relation_scores[subject_index][object_index] * entity_scores[subject_index] * \
                                        entity_scores[object_index]
 
             # append to the list of highest predictions
             top_predictions = np.concatenate((top_predictions, triplet_prediction))
 
     # get k highest confidence
-    top_k_indices = np.argsort(top_predictions[:, 5])[-k:]
-    global_sub_ids = top_predictions[top_k_indices, 0]
-    global_obj_ids = top_predictions[top_k_indices, 1]
-    sub_pred = top_predictions[top_k_indices, 2]
-    relation_pred = top_predictions[top_k_indices, 3]
-    obj_pred = top_predictions[top_k_indices, 4]
+    top_k_indices = np.argsort(top_predictions[:, 11])[-k:]
+    sub_boxes = top_predictions[top_k_indices, :4]
+    obj_boxes = top_predictions[top_k_indices, 4:8]
+    sub_pred = top_predictions[top_k_indices, 8]
+    relation_pred = top_predictions[top_k_indices, 9]
+    obj_pred = top_predictions[top_k_indices, 10]
 
     relations_gt = np.argmax(labels_relation, axis=2)
     entities_gt = np.argmax(labels_entity, axis=1)
@@ -87,6 +103,18 @@ def eval_image(labels_relation, labels_entity, out_confidence_relation_val, out_
             if relations_gt[subject_index, object_index] == NOF_PREDICATES - 1:
                 continue
 
+            gt_sub_box = np.zeros((4))
+            gt_sub_box[0] = entity.objects[subject_index].x
+            gt_sub_box[1] = entity.objects[subject_index].y
+            gt_sub_box[2] = entity.objects[subject_index].x + entity.objects[subject_index].width
+            gt_sub_box[3] = entity.objects[subject_index].y + entity.objects[subject_index].height
+
+            gt_obj_box = np.zeros((4))
+            gt_obj_box[0] = entity.objects[object_index].x
+            gt_obj_box[1] = entity.objects[object_index].y
+            gt_obj_box[2] = entity.objects[object_index].x + entity.objects[object_index].width
+            gt_obj_box[3] = entity.objects[object_index].y + entity.objects[object_index].height
+
             predicate_id = relations_gt[subject_index][object_index]
             sub_id = entities_gt[subject_index]
             obj_id = entities_gt[object_index]
@@ -94,22 +122,29 @@ def eval_image(labels_relation, labels_entity, out_confidence_relation_val, out_
             nof_pos_relationship += 1
             per_relation_total[predicate_id] += 1
 
-            # filter the predictions for the specific subject
-            sub_indices = set(np.where(global_sub_ids == subject_index)[0])
-            obj_indices = set(np.where(global_obj_ids == object_index)[0])
-            sub_pred_indices = set(np.where(sub_pred == sub_id)[0])
-            predicate_pred_indices = set(np.where(relation_pred == predicate_id)[0])
-            obj_pred_indices = set(np.where(obj_pred == obj_id)[0])
-
-            indices = sub_indices & obj_indices & sub_pred_indices & obj_pred_indices & predicate_pred_indices
-            if len(indices) != 0:
+            # filter according to iou 
+            found = False
+            for top_k_i in range(k):
+                if sub_id != sub_pred[top_k_i] or obj_id != obj_pred[top_k_i] or predicate_id !=relation_pred[top_k_i]:
+                    continue
+                iou_sub_val = iou(gt_sub_box, sub_boxes[top_k_i])
+                if iou_sub_val < 0.5:
+                    continue
+                iou_obj_val = iou(gt_obj_box, obj_boxes[top_k_i])
+                if iou_obj_val < 0.5:
+                    continue
+                
+                found = True
+                break
+ 
+            if found:
                 img_score += 1
                 per_relation_correct[predicate_id] += 1
             else:
                 img_score = img_score
 
     if nof_pos_relationship != 0:
-        img_score_percent = float(img_score) / nof_pos_relationship
+        img_score_percent = float(img_score) / float(nof_pos_relationship)
     else:
         img_score_percent = 0
 
@@ -133,7 +168,7 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
     # create logger
     logger = Logger()
 
-    # print train params
+    # print eval params
     frame = inspect.currentframe()
     args, _, _, values = inspect.getargvalues(frame)
     logger.log('function name "%s"' % inspect.getframeinfo(frame)[2])
@@ -196,14 +231,23 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
         relation_neg[NOF_PREDICATES - 1] = 1
         
         index = 0
-
+        basline_path = filesmanager.get_file_path("data.visual_genome.test_baseline")
         for file_name in test_files_list:
             file_path = os.path.join(entities_path, str(file_name) + ".p")
-            file_handle = open(file_path, "rb`")
+            file_handle = open(file_path, "rb")
             test_entities = cPickle.load(file_handle)
             file_handle.close()
-            for entity in test_entities:
 
+            for entity in test_entities:
+                file_path = os.path.join(basline_path, str(entity.image.id) + ".p")
+                if not os.path.exists(file_path):
+                    continue
+                file_handle = open(file_path, "rb")
+                detector_data = cPickle.load(file_handle)
+                file_handle.close()
+
+                entity.predicates_outputs_with_no_activation = detector_data["rel_dist_mapped"]
+                entity.objects_outputs_with_no_activations = detector_data["obj_dist_mapped"]
                 # set diagonal to be negative relation
                 N = entity.predicates_outputs_with_no_activation.shape[0]
                 indices = np.arange(N)
@@ -211,17 +255,32 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
                 entity.predicates_labels[indices, indices, :] = relation_neg
 
                 # create bounding box info per object
-                obj_bb = np.zeros((len(entity.objects), 4))
+                obj_bb = np.zeros((len(entity.objects), 14))
                 for obj_id in range(len(entity.objects)):
                     obj_bb[obj_id][0] = entity.objects[obj_id].x / 1200.0
                     obj_bb[obj_id][1] = entity.objects[obj_id].y / 1200.0
                     obj_bb[obj_id][2] = (entity.objects[obj_id].x + entity.objects[obj_id].width) / 1200.0
                     obj_bb[obj_id][3] = (entity.objects[obj_id].y + entity.objects[obj_id].height) / 1200.0
+                    obj_bb[obj_id][4] = entity.objects[obj_id].x
+                    obj_bb[obj_id][5] = -1 * entity.objects[obj_id].x
+                    obj_bb[obj_id][6] = entity.objects[obj_id].y
+                    obj_bb[obj_id][7] = -1 * entity.objects[obj_id].y 
+                    obj_bb[obj_id][8] = entity.objects[obj_id].width * entity.objects[obj_id].height
+                    obj_bb[obj_id][9] = -1 * entity.objects[obj_id].width * entity.objects[obj_id].height                     
+                obj_bb[:, 4] = np.argsort(obj_bb[:, 4])
+                obj_bb[:, 5] = np.argsort(obj_bb[:, 5])
+                obj_bb[:, 6] = np.argsort(obj_bb[:, 6])
+                obj_bb[:, 7] = np.argsort(obj_bb[:, 7])
+                obj_bb[:, 8] = np.argsort(obj_bb[:, 8])
+                obj_bb[:, 9] = np.argsort(obj_bb[:, 9])
+                obj_bb[:, 10] = np.argsort(np.max(entity.objects_outputs_with_no_activations, axis=1))
+                obj_bb[:, 11] = np.argsort(-1 * np.max(entity.objects_outputs_with_no_activations, axis=1))
+                obj_bb[:, 12] = np.arange(obj_bb.shape[0])
+                obj_bb[:, 13] = np.arange(obj_bb.shape[0], 0, -1)
 
                 # filter images with no positive relations
                 relations_neg_labels = entity.predicates_labels[:, :, NOF_PREDICATES - 1:]
-                if np.sum(entity.predicates_labels[:, :, :NOF_PREDICATES - 2]) == 0 or np.sum(
-                        relations_neg_labels) == 0:
+                if np.sum(entity.predicates_labels[:, :, :NOF_PREDICATES - 1]) == 0:
                     continue
 
                 # use object class labels for pred class (multiply be some factor to convert to confidence)
@@ -251,7 +310,7 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
                         accum_results[key] += results[key]
 
                 # eval image
-                k_metric_res, correct_image, total_image, img_per_relation_correct, img_per_relation_total = eval_image(
+                k_metric_res, correct_image, total_image, img_per_relation_correct, img_per_relation_total = eval_image(entity,
                     entity.predicates_labels,
                     entity.objects_labels, out_relation_probes_val, out_entity_probes_val, k=min(k, N * N - N))
                 # filter images without positive relations
@@ -284,10 +343,10 @@ def eval(load_module_name=None, k=100, layers=[500, 500, 500], gpu=1):
 
 if __name__ == "__main__":
     k_recall = True
-    gpu = 2
+    gpu = 1
     layers = [500, 500, 500]
     
-    load_module_name = "gpi_linguistic_orig_best"
+    load_module_name = "gpi_linguistic_pretrained"
     k = 100
     eval(load_module_name, k, layers, gpu)
     exit()
