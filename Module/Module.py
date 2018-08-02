@@ -141,12 +141,12 @@ class Module(object):
                     features_h_lst.append(feature)
 
             h = tf.concat(features_h_lst, axis=-1)
-            #h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
+            h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
             for layer in layers:
                 scope = str(index)
                 h = tf.contrib.layers.fully_connected(h, layer, reuse=self.reuse, scope=scope,
                                                       activation_fn=self.activation_fn)
-                #h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
+                h = tf.contrib.layers.dropout(h, keep_prob=0.9, is_training=self.phase_ph)
                 index += 1
 
             scope = str(index)
