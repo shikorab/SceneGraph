@@ -87,7 +87,7 @@ Please cite our paper if you use this code in your own work:
                Amir Globerson},
   title     = {Mapping Images to Scene Graphs with Permutation-Invariant Structured
                Prediction},
-  journal   = {Advances in Neural Information Processing Systems (NIPS)},
+  booktitle   = {Advances in Neural Information Processing Systems (NIPS)},
   year      = {2018}
 }
 ```
