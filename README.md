@@ -16,7 +16,7 @@ In this repository, we share our architecture implementation for the task of sce
 ## Model implementation
 **Scene Graph Predictor (SGP)** gets as an input inital confidience distributions per entity and relation and processes these to obtain new labels. SGP satisfies the graph permutation invariance property intoduced in the paper.
 The model is implemented in [TensorFlow](https://www.tensorflow.org/).
-For the initial confidence distributions per entity and relation, we simply re-use features learned by the baseline model from Zellers et al. (2017). (git repositiry https://github.com/rowanz/neural-motifs)
+For the initial confidence distributions per entity and relation, we simply re-use features learned by the baseline model from Zellers et al. (2017). (git repository https://github.com/rowanz/neural-motifs)
 
 
 
