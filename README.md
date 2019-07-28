@@ -1,6 +1,5 @@
 # Mapping Images to Scene Graphs with Permutation-Invariant Structured Prediction
-<!---[alt text](sg_example_final.png)--->
-<img src="sg_example_final.png" width="750">
+#### [Roei Herzig*](https://roeiherz.github.io/) , Moshiko Raboh*, [Gal Chechik](https://chechiklab.biu.ac.il/~gal/), [Jonathan Berant](http://www.cs.tau.ac.il/~joberant/), [Amir Globerson](http://www.cs.tau.ac.il/~gamir/)<img src="sg_example_final.png" width="750">
 
 
 ## Introduction
